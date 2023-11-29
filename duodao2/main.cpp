@@ -1,0 +1,141 @@
+#include <iostream>
+#include <cmath>
+#include <cstdlib>
+
+using namespace std;
+
+struct Box
+{
+    string ID;                                       //作业号
+    double begin_time;                               //提交时间
+    double rtime;                                    //已经运行时间
+    double turnaround_time;                          //周转时间
+    double cpu_service_time;                         //占用CPU的时间
+    double io_time;                                  //用于I/O的时间
+    double finish_time;                              //完成时间
+    double Wturnaround_time;                         //带权周转时间
+    Box& operator = (const Box& p2)                 //重载 = 运算符，方便排序
+    {
+        this->begin_time = p2.begin_time;
+        this->rtime = p2.rtime;
+        this->finish_time = p2.finish_time;
+        this->cpu_service_time = p2.cpu_service_time;
+        this->io_time = p2.io_time;
+        this->ID = p2.ID;
+        this->turnaround_time = p2.turnaround_time;
+        this->Wturnaround_time = p2.Wturnaround_time;
+        return *this;
+    }
+};
+
+typedef struct
+{
+    Box data[100];
+
+} JCB;
+
+const double CPU = 10.0;
+const double index = 1.0;
+JCB jcb, jcb_1;
+int n, number;
+
+void init()                                                        //初始化作业块
+{
+    cout << "请输入作业数目:";
+    cin >> n;
+    number = n;
+    for (int i = 0; i < n; i++)
+    {
+        cout << "JID:";
+        cin >> jcb.data[i].ID;
+        cout << jcb.data[i].ID << "提交时间:";
+        cin >> jcb.data[i].begin_time;
+        cout << jcb.data[i].ID << "所需cpu时间:";
+        cin >> jcb.data[i].cpu_service_time;
+        cout << jcb.data[i].ID << "所需I/O时间:";
+        cin >> jcb.data[i].io_time;
+        jcb.data[i].rtime = 0;
+    }
+    for (int i = 0; i < n - 1; i++)                                    //按照提交时间从前到后排序
+    {
+        for (int j = i + 1; j < n; j++)
+        {
+            if (jcb.data[i].begin_time > jcb.data[j].begin_time)
+                swap(jcb.data[i], jcb.data[j]);
+        }
+    }
+    for (int i = 0; i < n - 1; i++)                        //提交时间相同，序号小的在前
+    {
+        for (int j = i + 1; j < n; j++)
+        {
+            if (jcb.data[i].begin_time == jcb.data[j].begin_time && jcb.data[i].ID > jcb.data[j].ID)
+                swap(jcb.data[i], jcb.data[j]);
+        }
+    }
+}
+
+void FCFS()                                                //先来先服务
+{
+    int j = 0;
+    double running = CPU;
+    double bt = jcb.data[0].begin_time;
+    double gtt = 0;
+    double gwtt = 0;
+    double real_begin;
+    double record = jcb.data[j].begin_time;
+    int num = n - 1;
+    cout << "JID     " << "提交时间  " << "周转时间  " << "完成时间  " << "带权周转时间" << endl;
+    while (1)
+    {
+        if (jcb.data[j].cpu_service_time > CPU)
+        {
+            cout << "over running range!!!" << endl;
+            exit(0);
+        }
+        jcb.data[j].rtime += index;
+        record += index;
+        if (running >= 0)
+        {
+            if (jcb.data[j].rtime >= jcb.data[j].cpu_service_time)
+            {
+                real_begin = bt;
+                jcb.data[j].finish_time = record + jcb.data[j].io_time;
+                jcb.data[j].turnaround_time = jcb.data[j].finish_time - jcb.data[j].begin_time;
+                jcb.data[j].Wturnaround_time = jcb.data[j].turnaround_time / jcb.data[j].rtime;
+                cout << jcb.data[j].ID << "         "
+                     << jcb.data[j].begin_time << "          " << jcb.data[j].turnaround_time
+                     << "         " << jcb.data[j].finish_time << "          "
+                     << jcb.data[j].Wturnaround_time << endl;
+                n--;
+                running -= jcb.data[j].cpu_service_time;
+                bt = record;
+                gtt += jcb.data[j].turnaround_time;
+                gwtt += jcb.data[j].Wturnaround_time;
+            }
+            else
+            {
+                num++;
+                swap(jcb.data[num], jcb.data[j]);
+            }
+        }
+        else
+        {
+            running += jcb.data[j].cpu_service_time;
+            num++;
+            swap(jcb.data[num], jcb.data[j]);
+        }
+        if (n == 0)
+            break;
+        j++;
+    }
+    cout << " 平均周转时间:" << gtt / number << endl << "平均带权周转时间:" << gwtt / number << endl;
+}
+
+
+int main()
+
+{
+    init();
+    FCFS();
+    return 0;
+}
